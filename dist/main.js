@@ -165,8 +165,10 @@
       setTimeout(() => toast.remove(), 300);
     }, 4e3);
   }
+  var stateChangeCallback;
   function initUI(s, onStateChange) {
     state = s;
+    stateChangeCallback = onStateChange;
     if (!listenersAttached) {
       setupPlayerEntry(onStateChange);
       setupTeamReview(onStateChange);
@@ -211,10 +213,36 @@
     const currentIdx = phases.indexOf(state.phase);
     el.innerHTML = labels.map((label, i) => {
       let cls = "step-dot";
-      if (i < currentIdx) cls += " completed";
+      if (i < currentIdx) cls += " completed clickable";
       if (i === currentIdx) cls += " active";
-      return `<span class="${cls}">${label}</span>`;
+      return `<span class="${cls}" data-step="${i}">${label}</span>`;
     }).join('<span class="step-line"></span>');
+    el.querySelectorAll(".step-dot.completed").forEach((dot) => {
+      dot.addEventListener("click", () => {
+        const stepIdx = parseInt(dot.getAttribute("data-step"));
+        const targetPhase = phases[stepIdx];
+        navigateToPhase(targetPhase);
+      });
+    });
+  }
+  function navigateToPhase(targetPhase) {
+    const phases = ["players", "teams", "rounds", "standings"];
+    const targetIdx = phases.indexOf(targetPhase);
+    const currentIdx = phases.indexOf(state.phase);
+    if (targetIdx >= currentIdx) return;
+    if (targetIdx <= 0) {
+      state.teams = [];
+      state.rounds = [];
+      state.currentRound = 0;
+    } else if (targetIdx <= 1) {
+      state.rounds = [];
+      state.currentRound = 0;
+    } else if (targetIdx <= 2) {
+      state.currentRound = 0;
+    }
+    state.phase = targetPhase;
+    stateChangeCallback();
+    renderCurrentPhase();
   }
   function renderPlayerInputs() {
     const container = document.getElementById("player-inputs");

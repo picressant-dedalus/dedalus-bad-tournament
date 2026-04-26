@@ -20,8 +20,11 @@ function showToast(message: string, type: 'error' | 'success' = 'error'): void {
   }, 4000);
 }
 
+let stateChangeCallback: () => void;
+
 export function initUI(s: TournamentState, onStateChange: () => void): void {
   state = s;
+  stateChangeCallback = onStateChange;
   if (!listenersAttached) {
     setupPlayerEntry(onStateChange);
     setupTeamReview(onStateChange);
@@ -55,7 +58,7 @@ export function renderCurrentPhase(): void {
   }
 }
 
-// Step indicator
+// Step indicator — completed steps are clickable to navigate back
 function renderStepIndicator(): void {
   const el = document.getElementById('step-indicator')!;
   const labels = ['Players', 'Teams', 'Rounds', 'Standings'];
@@ -64,10 +67,46 @@ function renderStepIndicator(): void {
 
   el.innerHTML = labels.map((label, i) => {
     let cls = 'step-dot';
-    if (i < currentIdx) cls += ' completed';
+    if (i < currentIdx) cls += ' completed clickable';
     if (i === currentIdx) cls += ' active';
-    return `<span class="${cls}">${label}</span>`;
+    return `<span class="${cls}" data-step="${i}">${label}</span>`;
   }).join('<span class="step-line"></span>');
+
+  // Attach click handlers to completed steps
+  el.querySelectorAll('.step-dot.completed').forEach(dot => {
+    dot.addEventListener('click', () => {
+      const stepIdx = parseInt(dot.getAttribute('data-step')!);
+      const targetPhase = phases[stepIdx];
+      navigateToPhase(targetPhase);
+    });
+  });
+}
+
+function navigateToPhase(targetPhase: Phase): void {
+  const phases: Phase[] = ['players', 'teams', 'rounds', 'standings'];
+  const targetIdx = phases.indexOf(targetPhase);
+  const currentIdx = phases.indexOf(state.phase);
+
+  if (targetIdx >= currentIdx) return;
+
+  // Reset forward state depending on where we're going back to
+  if (targetIdx <= 0) {
+    // Going back to players: keep player names, reset everything else
+    state.teams = [];
+    state.rounds = [];
+    state.currentRound = 0;
+  } else if (targetIdx <= 1) {
+    // Going back to teams: keep players & teams, reset rounds
+    state.rounds = [];
+    state.currentRound = 0;
+  } else if (targetIdx <= 2) {
+    // Going back to rounds: keep everything, go to round 1
+    state.currentRound = 0;
+  }
+
+  state.phase = targetPhase;
+  stateChangeCallback();
+  renderCurrentPhase();
 }
 
 // Step 1: Player Entry
