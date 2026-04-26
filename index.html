@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Badminton Tournament</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏸 Badminton Tournament</h1>
+      <div class="step-indicator" id="step-indicator"></div>
+    </header>
+
+    <main>
+      <!-- Step 1: Player Entry -->
+      <section id="step-players" class="step">
+        <h2>Enter Players</h2>
+        <p class="step-description">Enter the names of all 12 players, then generate random pairs.</p>
+        <div id="player-inputs" class="player-grid"></div>
+        <div class="actions">
+          <button id="btn-generate-pairs" class="btn btn-primary">🎲 Generate Pairs</button>
+        </div>
+      </section>
+
+      <!-- Step 2: Team Review -->
+      <section id="step-teams" class="step hidden">
+        <h2>Review Teams</h2>
+        <p class="step-description">Review the generated pairs. Click a player to swap them with another player.</p>
+        <div id="team-list" class="team-grid"></div>
+        <div class="actions">
+          <button id="btn-reshuffle" class="btn btn-secondary">🔄 Re-shuffle</button>
+          <button id="btn-confirm-teams" class="btn btn-primary">✅ Confirm Teams</button>
+        </div>
+      </section>
+
+      <!-- Step 3: Rounds -->
+      <section id="step-rounds" class="step hidden">
+        <h2 id="round-title">Round 1</h2>
+        <p class="step-description" id="round-description">Enter the scores for each match.</p>
+        <div id="round-matches" class="matches-grid"></div>
+        <div class="round-nav">
+          <button id="btn-prev-round" class="btn btn-secondary" disabled>← Previous</button>
+          <span id="round-indicator" class="round-indicator"></span>
+          <button id="btn-submit-round" class="btn btn-primary">Submit Round</button>
+          <button id="btn-next-round" class="btn btn-secondary hidden">Next →</button>
+        </div>
+      </section>
+
+      <!-- Step 4: Final Standings -->
+      <section id="step-standings" class="step hidden">
+        <h2>🏆 Final Standings</h2>
+        <div id="winner-banner" class="winner-banner"></div>
+        <table id="standings-table" class="standings-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Team</th>
+              <th>W</th>
+              <th>L</th>
+              <th>PF</th>
+              <th>PA</th>
+              <th>+/-</th>
+            </tr>
+          </thead>
+          <tbody id="standings-body"></tbody>
+        </table>
+        <div class="actions">
+          <button id="btn-view-rounds" class="btn btn-secondary">📋 View Rounds</button>
+          <button id="btn-reset" class="btn btn-danger">🗑️ Reset Tournament</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast-container" class="toast-container"></div>
+  <script src="dist/main.js"></script>
+</body>
+</html>

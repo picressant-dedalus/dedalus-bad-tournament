@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --outfile=dist/main.js --sourcemap --target=es2020"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "typescript": "^6.0.3"
+  }
+}
