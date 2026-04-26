@@ -56,6 +56,9 @@ export function renderCurrentPhase(): void {
     case 'rounds': renderRound(); break;
     case 'standings': renderStandings(); break;
   }
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 // Step indicator — completed steps are clickable to navigate back
@@ -345,6 +348,7 @@ function setupRounds(onStateChange: () => void): void {
       state.currentRound--;
       onStateChange();
       renderRound();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 
@@ -381,6 +385,7 @@ function setupRounds(onStateChange: () => void): void {
 
     onStateChange();
     renderRound();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   document.getElementById('btn-next-round')!.addEventListener('click', () => {
@@ -393,6 +398,7 @@ function setupRounds(onStateChange: () => void): void {
       state.currentRound++;
       onStateChange();
       renderRound();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   });
 }
