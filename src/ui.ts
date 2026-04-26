@@ -320,9 +320,22 @@ function renderRound(): void {
 }
 
 function attachScoreValidation(container: HTMLElement): void {
-  const inputs = container.querySelectorAll('.score-input') as NodeListOf<HTMLInputElement>;
-  inputs.forEach(input => {
+  const inputs = Array.from(container.querySelectorAll('.score-input')) as HTMLInputElement[];
+  const submitBtn = document.getElementById('btn-submit-round') as HTMLButtonElement;
+
+  inputs.forEach((input, idx) => {
     input.addEventListener('input', () => {
+      // Auto-advance: when 2+ digits entered, move to next input (or submit button)
+      if (input.value.length >= 2) {
+        if (idx < inputs.length - 1) {
+          inputs[idx + 1].focus();
+          inputs[idx + 1].select();
+        } else {
+          submitBtn.focus();
+        }
+      }
+
+      // Live validation
       const mIdx = input.getAttribute('data-match')!;
       const input1 = container.querySelector(`[data-match="${mIdx}"][data-side="1"]`) as HTMLInputElement;
       const input2 = container.querySelector(`[data-match="${mIdx}"][data-side="2"]`) as HTMLInputElement;

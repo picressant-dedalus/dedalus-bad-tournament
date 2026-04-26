@@ -3,8 +3,24 @@ import { saveState } from './state.js';
 let state;
 let selectedSwapPlayer = null;
 let listenersAttached = false;
+function showToast(message, type = 'error') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    container.appendChild(toast);
+    // Trigger reflow for animation
+    toast.offsetHeight;
+    toast.classList.add('visible');
+    setTimeout(() => {
+        toast.classList.remove('visible');
+        setTimeout(() => toast.remove(), 300);
+    }, 4000);
+}
+let stateChangeCallback;
 export function initUI(s, onStateChange) {
     state = s;
+    stateChangeCallback = onStateChange;
     if (!listenersAttached) {
         setupPlayerEntry(onStateChange);
         setupTeamReview(onStateChange);
@@ -41,8 +57,9 @@ export function renderCurrentPhase() {
             renderStandings();
             break;
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-// Step indicator
+// Step indicator — completed steps are clickable to navigate back
 function renderStepIndicator() {
     const el = document.getElementById('step-indicator');
     const labels = ['Players', 'Teams', 'Rounds', 'Standings'];
@@ -51,11 +68,54 @@ function renderStepIndicator() {
     el.innerHTML = labels.map((label, i) => {
         let cls = 'step-dot';
         if (i < currentIdx)
-            cls += ' completed';
+            cls += ' completed clickable';
         if (i === currentIdx)
             cls += ' active';
-        return `<span class="${cls}">${label}</span>`;
+        return `<span class="${cls}" data-step="${i}">${label}</span>`;
     }).join('<span class="step-line"></span>');
+    // Attach click handlers to completed steps
+    el.querySelectorAll('.step-dot.completed').forEach(dot => {
+        dot.addEventListener('click', () => {
+            const stepIdx = parseInt(dot.getAttribute('data-step'));
+            const targetPhase = phases[stepIdx];
+            navigateToPhase(targetPhase);
+        });
+    });
+}
+function navigateToPhase(targetPhase) {
+    const phases = ['players', 'teams', 'rounds', 'standings'];
+    const targetIdx = phases.indexOf(targetPhase);
+    const currentIdx = phases.indexOf(state.phase);
+    if (targetIdx >= currentIdx)
+        return;
+    // Warn the user about data loss
+    const warnings = {
+        players: 'This will reset teams, rounds, and all scores.',
+        teams: 'This will reset all rounds and scores.',
+        rounds: 'This will take you back to round 1.',
+    };
+    const msg = warnings[targetPhase] || '';
+    if (!confirm(`Go back to ${targetPhase}? ${msg}`))
+        return;
+    // Reset forward state depending on where we're going back to
+    if (targetIdx <= 0) {
+        // Going back to players: keep player names, reset everything else
+        state.teams = [];
+        state.rounds = [];
+        state.currentRound = 0;
+    }
+    else if (targetIdx <= 1) {
+        // Going back to teams: keep players & teams, reset rounds
+        state.rounds = [];
+        state.currentRound = 0;
+    }
+    else if (targetIdx <= 2) {
+        // Going back to rounds: keep everything, go to round 1
+        state.currentRound = 0;
+    }
+    state.phase = targetPhase;
+    stateChangeCallback();
+    renderCurrentPhase();
 }
 // Step 1: Player Entry
 function renderPlayerInputs() {
@@ -89,7 +149,7 @@ function setupPlayerEntry(onStateChange) {
         // Check for duplicates
         const uniqueNames = new Set(players.map(n => n.toLowerCase()));
         if (uniqueNames.size < 12) {
-            alert('All player names must be unique!');
+            showToast('All player names must be unique!');
             return;
         }
         state.players = players;
@@ -224,8 +284,55 @@ function renderRound() {
                  min="0" step="1" placeholder="—" ${isCompleted ? 'disabled' : ''}>
         </div>
       </div>
+      <div class="match-error" data-error="${mIdx}"></div>
     `;
         container.appendChild(card);
+    });
+    // Attach live validation to score inputs
+    if (!isRoundComplete) {
+        attachScoreValidation(container);
+    }
+}
+function attachScoreValidation(container) {
+    const inputs = Array.from(container.querySelectorAll('.score-input'));
+    const submitBtn = document.getElementById('btn-submit-round');
+    inputs.forEach((input, idx) => {
+        input.addEventListener('input', () => {
+            // Auto-advance: when 2+ digits entered, move to next input (or submit button)
+            if (input.value.length >= 2) {
+                if (idx < inputs.length - 1) {
+                    inputs[idx + 1].focus();
+                    inputs[idx + 1].select();
+                }
+                else {
+                    submitBtn.focus();
+                }
+            }
+            // Live validation
+            const mIdx = input.getAttribute('data-match');
+            const input1 = container.querySelector(`[data-match="${mIdx}"][data-side="1"]`);
+            const input2 = container.querySelector(`[data-match="${mIdx}"][data-side="2"]`);
+            const errorEl = container.querySelector(`[data-error="${mIdx}"]`);
+            // Clear previous state
+            input1.classList.remove('score-error');
+            input2.classList.remove('score-error');
+            if (errorEl)
+                errorEl.textContent = '';
+            // Only validate when both fields have values
+            if (input1.value.trim() === '' || input2.value.trim() === '')
+                return;
+            const s1 = Number(input1.value);
+            const s2 = Number(input2.value);
+            if (isNaN(s1) || isNaN(s2))
+                return;
+            const err = validateScore(s1, s2);
+            if (err) {
+                input1.classList.add('score-error');
+                input2.classList.add('score-error');
+                if (errorEl)
+                    errorEl.textContent = err;
+            }
+        });
     });
 }
 function setupRounds(onStateChange) {
@@ -234,6 +341,7 @@ function setupRounds(onStateChange) {
             state.currentRound--;
             onStateChange();
             renderRound();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
     document.getElementById('btn-submit-round').addEventListener('click', () => {
@@ -257,11 +365,12 @@ function setupRounds(onStateChange) {
             match.score2 = s2;
         });
         if (errors.length > 0) {
-            alert(errors.join('\n'));
+            errors.forEach(e => showToast(e));
             return;
         }
         onStateChange();
         renderRound();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
     document.getElementById('btn-next-round').addEventListener('click', () => {
         const isLastRound = state.currentRound === state.rounds.length - 1;
@@ -274,6 +383,7 @@ function setupRounds(onStateChange) {
             state.currentRound++;
             onStateChange();
             renderRound();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     });
 }
