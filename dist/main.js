@@ -205,6 +205,7 @@
         renderStandings();
         break;
     }
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
   function renderStepIndicator() {
     const el = document.getElementById("step-indicator");
@@ -230,6 +231,13 @@
     const targetIdx = phases.indexOf(targetPhase);
     const currentIdx = phases.indexOf(state.phase);
     if (targetIdx >= currentIdx) return;
+    const warnings = {
+      players: "This will reset teams, rounds, and all scores.",
+      teams: "This will reset all rounds and scores.",
+      rounds: "This will take you back to round 1."
+    };
+    const msg = warnings[targetPhase] || "";
+    if (!confirm(`Go back to ${targetPhase}? ${msg}`)) return;
     if (targetIdx <= 0) {
       state.teams = [];
       state.rounds = [];
@@ -435,6 +443,7 @@
         state.currentRound--;
         onStateChange();
         renderRound();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     });
     document.getElementById("btn-submit-round").addEventListener("click", () => {
@@ -463,6 +472,7 @@
       }
       onStateChange();
       renderRound();
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
     document.getElementById("btn-next-round").addEventListener("click", () => {
       const isLastRound = state.currentRound === state.rounds.length - 1;
@@ -474,6 +484,7 @@
         state.currentRound++;
         onStateChange();
         renderRound();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     });
   }

@@ -58,7 +58,6 @@ export function renderCurrentPhase(): void {
   }
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
 }
 
 // Step indicator — completed steps are clickable to navigate back
@@ -91,6 +90,15 @@ function navigateToPhase(targetPhase: Phase): void {
   const currentIdx = phases.indexOf(state.phase);
 
   if (targetIdx >= currentIdx) return;
+
+  // Warn the user about data loss
+  const warnings: Record<string, string> = {
+    players: 'This will reset teams, rounds, and all scores.',
+    teams: 'This will reset all rounds and scores.',
+    rounds: 'This will take you back to round 1.',
+  };
+  const msg = warnings[targetPhase] || '';
+  if (!confirm(`Go back to ${targetPhase}? ${msg}`)) return;
 
   // Reset forward state depending on where we're going back to
   if (targetIdx <= 0) {
