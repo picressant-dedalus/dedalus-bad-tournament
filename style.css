@@ -584,3 +584,34 @@ h2 {
     transform: translateX(0);
   }
 }
+
+/* Update notification modal */
+.update-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.update-overlay.hidden {
+  display: none;
+}
+
+.update-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 320px;
+  width: 90%;
+}
+
+.update-card p {
+  font-size: 1.1rem;
+  margin: 0 0 1.5rem;
+  font-weight: 500;
+}
