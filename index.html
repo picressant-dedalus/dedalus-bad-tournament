@@ -9,6 +9,11 @@
   <meta name="theme-color" content="#3b82f6">
 </head>
 <body>
+  <div id="update-banner" class="update-banner hidden">
+    <span>🔄 A new version is available!</span>
+    <button id="btn-update" class="btn btn-update">Reload</button>
+  </div>
+
   <div class="container">
     <header>
       <h1>🏸 Badminton Tournament</h1>
@@ -76,30 +81,21 @@
     </main>
   </div>
 
-  <div id="update-modal" class="update-overlay hidden">
-    <div class="update-card">
-      <p>🔄 A new version is available!</p>
-      <button id="btn-update" class="btn btn-primary">OK — Reload</button>
-    </div>
-  </div>
-
   <div id="toast-container" class="toast-container"></div>
   <script type="module" src="dist/main.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then(function(reg) {
-        // If a new SW is already waiting
         if (reg.waiting) {
-          showUpdateModal(reg);
+          showUpdateBanner(reg);
           return;
         }
-        // Listen for new SW installing
         reg.addEventListener('updatefound', function() {
           var newWorker = reg.installing;
           if (!newWorker) return;
           newWorker.addEventListener('statechange', function() {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              showUpdateModal(reg);
+              showUpdateBanner(reg);
             }
           });
         });
@@ -113,9 +109,9 @@
         }
       });
 
-      function showUpdateModal(reg) {
-        var modal = document.getElementById('update-modal');
-        modal.classList.remove('hidden');
+      function showUpdateBanner(reg) {
+        var banner = document.getElementById('update-banner');
+        banner.classList.remove('hidden');
         document.getElementById('btn-update').addEventListener('click', function() {
           if (reg.waiting) {
             reg.waiting.postMessage({ type: 'SKIP_WAITING' });

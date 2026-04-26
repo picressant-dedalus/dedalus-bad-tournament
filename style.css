@@ -585,33 +585,37 @@ h2 {
   }
 }
 
-/* Update notification modal */
-.update-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+/* Update notification banner */
+.update-banner {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: #1e40af;
+  color: #fff;
+  font-weight: 500;
+  font-size: 0.95rem;
 }
 
-.update-overlay.hidden {
+.update-banner.hidden {
   display: none;
 }
 
-.update-card {
+.btn-update {
   background: #fff;
-  border-radius: 12px;
-  padding: 2rem;
-  text-align: center;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  max-width: 320px;
-  width: 90%;
+  color: #1e40af;
+  border: none;
+  border-radius: 6px;
+  padding: 0.4rem 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 0.9rem;
 }
 
-.update-card p {
-  font-size: 1.1rem;
-  margin: 0 0 1.5rem;
-  font-weight: 500;
+.btn-update:hover {
+  background: #e0e7ff;
 }
