@@ -259,6 +259,8 @@ function renderRound(): void {
     } else {
       nextBtn.textContent = 'Next →';
       nextBtn.classList.remove('hidden');
+      nextBtn.classList.remove('btn-secondary');
+      nextBtn.classList.add('btn-primary');
     }
   } else {
     submitBtn.classList.remove('hidden');

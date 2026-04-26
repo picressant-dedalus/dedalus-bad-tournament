@@ -240,6 +240,8 @@ function renderRound() {
         else {
             nextBtn.textContent = 'Next →';
             nextBtn.classList.remove('hidden');
+            nextBtn.classList.remove('btn-secondary');
+            nextBtn.classList.add('btn-primary');
         }
     }
     else {
