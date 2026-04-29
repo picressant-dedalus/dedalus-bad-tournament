@@ -137,7 +137,57 @@ function renderPlayerInputs(): void {
   }
 }
 
+const SPREADSHEET_ID = '1JaK-mi1zznMOo_-2Vdf-982QhP0lVBcpxWpCLl0KNjI';
+const HEADER_ROWS_TO_SKIP = 2;
+
+async function importPlayersFromSheet(tabName: string, onStateChange: () => void): Promise<void> {
+  const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}&range=D:D`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const csv = await response.text();
+
+    // Parse CSV: each line is a quoted value like "Name"
+    const names = csv
+      .split('\n')
+      .slice(HEADER_ROWS_TO_SKIP)
+      .map(line => line.replace(/^"(.*)"$/, '$1').trim())
+      .filter(name => name.length > 0)
+      .slice(0, 12);
+
+    if (names.length === 0) {
+      showToast('No player names found in that tab.');
+      return;
+    }
+
+    // Fill state: imported names + blank slots for the rest
+    state.players = [...names, ...Array(12 - names.length).fill('')];
+    onStateChange();
+    renderPlayerInputs();
+
+    if (names.length < 12) {
+      showToast(`Imported ${names.length} players — fill the remaining ${12 - names.length} manually.`, 'success');
+    } else {
+      showToast(`Imported 12 players!`, 'success');
+    }
+  } catch (err) {
+    showToast(`Import failed: could not fetch tab "${tabName}".`);
+  }
+}
+
 function setupPlayerEntry(onStateChange: () => void): void {
+  document.getElementById('btn-import-players')!.addEventListener('click', () => {
+    const input = document.getElementById('import-tab-name') as HTMLInputElement;
+    const tabName = input.value.trim();
+    if (!tabName) {
+      input.focus();
+      showToast('Please enter a tab name.');
+      return;
+    }
+    importPlayersFromSheet(tabName, onStateChange);
+  });
+
   document.getElementById('btn-clear-players')!.addEventListener('click', () => {
     if (!confirm('Clear all player names?')) return;
     state.players = Array(12).fill('');

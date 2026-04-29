@@ -114,6 +114,38 @@ h2 {
   font-size: 0.85rem;
 }
 
+/* Import from Google Sheet */
+.import-section {
+  margin-bottom: 1rem;
+}
+
+.import-section label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  color: #555;
+}
+
+.import-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.import-row input {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.import-row input:focus {
+  border-color: #3b82f6;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
 /* Player Grid — single column on mobile */
 .player-grid {
   display: grid;
