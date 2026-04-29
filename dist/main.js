@@ -268,6 +268,39 @@
   }
   var SPREADSHEET_ID = "1JaK-mi1zznMOo_-2Vdf-982QhP0lVBcpxWpCLl0KNjI";
   var HEADER_ROWS_TO_SKIP = 2;
+  var IGNORED_TABS = ["Comptes", "ARCHIVE", "Contributions"];
+  async function loadSheetTabs() {
+    const select = document.getElementById("import-tab-select");
+    try {
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlembed`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const html = await response.text();
+      const regex = /items\.push\(\{name:\s*"([^"]+)"/g;
+      const tabs = [];
+      let match;
+      while ((match = regex.exec(html)) !== null) {
+        const name = match[1].replace(/\\\//g, "/");
+        if (!IGNORED_TABS.includes(name)) {
+          tabs.push(name);
+        }
+      }
+      select.innerHTML = "";
+      if (tabs.length === 0) {
+        select.innerHTML = '<option value="" disabled selected>No tabs found</option>';
+        return;
+      }
+      select.innerHTML = '<option value="" disabled selected>Select a tab\u2026</option>';
+      for (const tab of tabs) {
+        const option = document.createElement("option");
+        option.value = tab;
+        option.textContent = tab;
+        select.appendChild(option);
+      }
+    } catch {
+      select.innerHTML = '<option value="" disabled selected>Failed to load tabs</option>';
+    }
+  }
   async function importPlayersFromSheet(tabName, onStateChange) {
     const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}&range=D:D`;
     try {
@@ -292,12 +325,12 @@
     }
   }
   function setupPlayerEntry(onStateChange) {
+    loadSheetTabs();
     document.getElementById("btn-import-players").addEventListener("click", () => {
-      const input = document.getElementById("import-tab-name");
-      const tabName = input.value.trim();
+      const select = document.getElementById("import-tab-select");
+      const tabName = select.value;
       if (!tabName) {
-        input.focus();
-        showToast("Please enter a tab name.");
+        showToast("Please select a tab.");
         return;
       }
       importPlayersFromSheet(tabName, onStateChange);

@@ -26,9 +26,11 @@
         <h2>Enter Players</h2>
         <p class="step-description">Enter the names of all 12 players, then generate random pairs.</p>
         <div class="import-section">
-          <label for="import-tab-name">Import from Google Sheet:</label>
+          <label for="import-tab-select">Import from Google Sheet:</label>
           <div class="import-row">
-            <input type="text" id="import-tab-name" placeholder="Tab name (e.g. Lundi 04/05)" maxlength="100">
+            <select id="import-tab-select" class="import-select">
+              <option value="" disabled selected>Loading tabs…</option>
+            </select>
             <button id="btn-import-players" class="btn btn-secondary">📥 Import</button>
           </div>
         </div>

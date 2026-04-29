@@ -139,6 +139,45 @@ function renderPlayerInputs(): void {
 
 const SPREADSHEET_ID = '1JaK-mi1zznMOo_-2Vdf-982QhP0lVBcpxWpCLl0KNjI';
 const HEADER_ROWS_TO_SKIP = 2;
+const IGNORED_TABS = ['Comptes', 'ARCHIVE', 'Contributions'];
+
+async function loadSheetTabs(): Promise<void> {
+  const select = document.getElementById('import-tab-select') as HTMLSelectElement;
+  try {
+    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlembed`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const html = await response.text();
+
+    // Parse tab names from items.push({name: "..."}) in the HTML
+    const regex = /items\.push\(\{name:\s*"([^"]+)"/g;
+    const tabs: string[] = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      // Unescape forward slashes from the HTML source
+      const name = match[1].replace(/\\\//g, '/');
+      if (!IGNORED_TABS.includes(name)) {
+        tabs.push(name);
+      }
+    }
+
+    select.innerHTML = '';
+    if (tabs.length === 0) {
+      select.innerHTML = '<option value="" disabled selected>No tabs found</option>';
+      return;
+    }
+
+    select.innerHTML = '<option value="" disabled selected>Select a tab…</option>';
+    for (const tab of tabs) {
+      const option = document.createElement('option');
+      option.value = tab;
+      option.textContent = tab;
+      select.appendChild(option);
+    }
+  } catch {
+    select.innerHTML = '<option value="" disabled selected>Failed to load tabs</option>';
+  }
+}
 
 async function importPlayersFromSheet(tabName: string, onStateChange: () => void): Promise<void> {
   const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tabName)}&range=D:D`;
@@ -148,7 +187,6 @@ async function importPlayersFromSheet(tabName: string, onStateChange: () => void
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const csv = await response.text();
 
-    // Parse CSV: each line is a quoted value like "Name"
     const names = csv
       .split('\n')
       .slice(HEADER_ROWS_TO_SKIP)
@@ -161,7 +199,6 @@ async function importPlayersFromSheet(tabName: string, onStateChange: () => void
       return;
     }
 
-    // Fill state: imported names + blank slots for the rest
     state.players = [...names, ...Array(12 - names.length).fill('')];
     onStateChange();
     renderPlayerInputs();
@@ -177,12 +214,13 @@ async function importPlayersFromSheet(tabName: string, onStateChange: () => void
 }
 
 function setupPlayerEntry(onStateChange: () => void): void {
+  loadSheetTabs();
+
   document.getElementById('btn-import-players')!.addEventListener('click', () => {
-    const input = document.getElementById('import-tab-name') as HTMLInputElement;
-    const tabName = input.value.trim();
+    const select = document.getElementById('import-tab-select') as HTMLSelectElement;
+    const tabName = select.value;
     if (!tabName) {
-      input.focus();
-      showToast('Please enter a tab name.');
+      showToast('Please select a tab.');
       return;
     }
     importPlayersFromSheet(tabName, onStateChange);
