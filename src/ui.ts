@@ -4,6 +4,8 @@ import { TournamentState, Phase, saveState } from './state.js';
 let state: TournamentState;
 let selectedSwapPlayer: { teamIdx: number; playerSlot: 1 | 2 } | null = null;
 let listenersAttached = false;
+// Temporarily holds scores while editing a completed round
+let editingScores: { score1: number; score2: number }[] | null = null;
 
 function showToast(message: string, type: 'error' | 'success' = 'error'): void {
   const container = document.getElementById('toast-container')!;
@@ -247,12 +249,14 @@ function renderRound(): void {
   const prevBtn = document.getElementById('btn-prev-round') as HTMLButtonElement;
   const submitBtn = document.getElementById('btn-submit-round') as HTMLButtonElement;
   const nextBtn = document.getElementById('btn-next-round') as HTMLButtonElement;
+  const editBtn = document.getElementById('btn-edit-round') as HTMLButtonElement;
 
   prevBtn.disabled = state.currentRound === 0;
   prevBtn.classList.toggle('hidden', state.currentRound === 0);
 
   if (isRoundComplete) {
     submitBtn.classList.add('hidden');
+    editBtn.classList.remove('hidden');
     if (isLastRound) {
       nextBtn.textContent = '🏆 See Results';
       nextBtn.classList.remove('hidden');
@@ -262,8 +266,14 @@ function renderRound(): void {
       nextBtn.classList.remove('btn-secondary');
       nextBtn.classList.add('btn-primary');
     }
+  } else if (editingScores) {
+    // Editing mode: show submit, hide edit and next
+    submitBtn.classList.remove('hidden');
+    editBtn.classList.add('hidden');
+    nextBtn.classList.add('hidden');
   } else {
     submitBtn.classList.remove('hidden');
+    editBtn.classList.add('hidden');
     nextBtn.classList.add('hidden');
   }
 
@@ -271,6 +281,8 @@ function renderRound(): void {
   const descEl = document.getElementById('round-description')!;
   if (isRoundComplete) {
     descEl.textContent = 'Round complete! Review scores below.';
+  } else if (editingScores) {
+    descEl.textContent = 'Editing scores — modify and re-submit.';
   } else {
     descEl.textContent = 'Enter the scores for each match. Winner needs ≥21 pts and a 2-point lead.';
   }
@@ -284,14 +296,19 @@ function renderRound(): void {
     const team2 = state.teams[match.team2Index];
     const isCompleted = match.score1 !== null && match.score2 !== null;
 
+    // When editing, use saved scores for display but inputs are enabled
+    const displayScore1 = editingScores ? editingScores[mIdx].score1 : match.score1;
+    const displayScore2 = editingScores ? editingScores[mIdx].score2 : match.score2;
+    const inputsDisabled = isCompleted && !editingScores;
+
     const card = document.createElement('div');
-    card.className = 'match-card' + (isCompleted ? ' completed' : '');
+    card.className = 'match-card' + (isCompleted && !editingScores ? ' completed' : '');
 
     const team1Label = `${team1.player1} & ${team1.player2}`;
     const team2Label = `${team2.player1} & ${team2.player2}`;
 
-    const winner1 = isCompleted && match.score1! > match.score2! ? ' winner' : '';
-    const winner2 = isCompleted && match.score2! > match.score1! ? ' winner' : '';
+    const winner1 = isCompleted && !editingScores && match.score1! > match.score2! ? ' winner' : '';
+    const winner2 = isCompleted && !editingScores && match.score2! > match.score1! ? ' winner' : '';
 
     card.innerHTML = `
       <div class="match-header">Match ${mIdx + 1}</div>
@@ -299,15 +316,15 @@ function renderRound(): void {
         <div class="match-team${winner1}">
           <span class="team-name">${team1Label}</span>
           <input type="number" class="score-input" data-match="${mIdx}" data-side="1"
-                 value="${match.score1 !== null ? match.score1 : ''}"
-                 min="0" step="1" placeholder="—" ${isCompleted ? 'disabled' : ''}>
+                 value="${displayScore1 !== null ? displayScore1 : ''}"
+                 min="0" step="1" placeholder="—" ${inputsDisabled ? 'disabled' : ''}>
         </div>
         <div class="match-vs">vs</div>
         <div class="match-team${winner2}">
           <span class="team-name">${team2Label}</span>
           <input type="number" class="score-input" data-match="${mIdx}" data-side="2"
-                 value="${match.score2 !== null ? match.score2 : ''}"
-                 min="0" step="1" placeholder="—" ${isCompleted ? 'disabled' : ''}>
+                 value="${displayScore2 !== null ? displayScore2 : ''}"
+                 min="0" step="1" placeholder="—" ${inputsDisabled ? 'disabled' : ''}>
         </div>
       </div>
       <div class="match-error" data-error="${mIdx}"></div>
@@ -315,8 +332,8 @@ function renderRound(): void {
     container.appendChild(card);
   });
 
-  // Attach live validation to score inputs
-  if (!isRoundComplete) {
+  // Attach live validation to score inputs when editing or entering new scores
+  if (!isRoundComplete || editingScores) {
     attachScoreValidation(container);
   }
 }
@@ -368,11 +385,28 @@ function attachScoreValidation(container: HTMLElement): void {
 function setupRounds(onStateChange: () => void): void {
   document.getElementById('btn-prev-round')!.addEventListener('click', () => {
     if (state.currentRound > 0) {
+      editingScores = null;
       state.currentRound--;
       onStateChange();
       renderRound();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  });
+
+  document.getElementById('btn-edit-round')!.addEventListener('click', () => {
+    const round = state.rounds[state.currentRound];
+    // Save current scores for pre-filling inputs
+    editingScores = round.matches.map(m => ({
+      score1: m.score1 as number,
+      score2: m.score2 as number,
+    }));
+    // Clear scores in state so the round is considered incomplete
+    round.matches.forEach(m => {
+      m.score1 = null;
+      m.score2 = null;
+    });
+    onStateChange();
+    renderRound();
   });
 
   document.getElementById('btn-submit-round')!.addEventListener('click', () => {
@@ -406,12 +440,14 @@ function setupRounds(onStateChange: () => void): void {
       return;
     }
 
+    editingScores = null;
     onStateChange();
     renderRound();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   });
 
   document.getElementById('btn-next-round')!.addEventListener('click', () => {
+    editingScores = null;
     const isLastRound = state.currentRound === state.rounds.length - 1;
     if (isLastRound) {
       state.phase = 'standings';
