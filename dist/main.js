@@ -565,6 +565,11 @@
       onStateChange();
       renderCurrentPhase();
     });
+    document.getElementById("btn-new-with-players").addEventListener("click", () => {
+      if (confirm("Start a new tournament with the same players? Current results will be lost.")) {
+        window.__resetKeepPlayers();
+      }
+    });
     document.getElementById("btn-reset").addEventListener("click", () => {
       if (confirm("Are you sure you want to reset the entire tournament? This cannot be undone.")) {
         window.__resetTournament();
@@ -581,6 +586,16 @@
     window.__resetTournament = () => {
       clearState();
       state2 = getDefaultState();
+      initUI(state2, onStateChange);
+    };
+    window.__resetKeepPlayers = () => {
+      const players = [...state2.players];
+      clearState();
+      state2 = getDefaultState();
+      state2.players = players;
+      state2.teams = generatePairs(players);
+      state2.phase = "teams";
+      saveState(state2);
       initUI(state2, onStateChange);
     };
     initUI(state2, onStateChange);

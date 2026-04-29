@@ -506,6 +506,12 @@ function setupStandings(onStateChange: () => void): void {
     renderCurrentPhase();
   });
 
+  document.getElementById('btn-new-with-players')!.addEventListener('click', () => {
+    if (confirm('Start a new tournament with the same players? Current results will be lost.')) {
+      (window as any).__resetKeepPlayers();
+    }
+  });
+
   document.getElementById('btn-reset')!.addEventListener('click', () => {
     if (confirm('Are you sure you want to reset the entire tournament? This cannot be undone.')) {
       (window as any).__resetTournament();

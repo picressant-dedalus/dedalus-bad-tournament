@@ -1,4 +1,5 @@
 import { loadState, saveState, clearState, getDefaultState } from './state.js';
+import { generatePairs } from './tournament.js';
 import { initUI, renderCurrentPhase } from './ui.js';
 
 function main(): void {
@@ -12,6 +13,18 @@ function main(): void {
   (window as any).__resetTournament = () => {
     clearState();
     state = getDefaultState();
+    initUI(state, onStateChange);
+  };
+
+  // Reset but keep player names — go straight to team generation
+  (window as any).__resetKeepPlayers = () => {
+    const players = [...state.players];
+    clearState();
+    state = getDefaultState();
+    state.players = players;
+    state.teams = generatePairs(players);
+    state.phase = 'teams';
+    saveState(state);
     initUI(state, onStateChange);
   };
 
