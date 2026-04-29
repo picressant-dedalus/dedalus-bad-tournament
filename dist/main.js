@@ -269,27 +269,36 @@
   var SPREADSHEET_ID = "1JaK-mi1zznMOo_-2Vdf-982QhP0lVBcpxWpCLl0KNjI";
   var HEADER_ROWS_TO_SKIP = 2;
   var IGNORED_TABS = ["Comptes", "ARCHIVE", "Contributions"];
+  function parseTabNames(html) {
+    const regex = /items\.push\(\{name:\s*"([^"]+)"/g;
+    const tabs = [];
+    let match;
+    while ((match = regex.exec(html)) !== null) {
+      const name = match[1].replace(/\\\//g, "/");
+      if (!IGNORED_TABS.includes(name)) {
+        tabs.push(name);
+      }
+    }
+    return tabs;
+  }
   async function loadSheetTabs() {
     const select = document.getElementById("import-tab-select");
+    const textInput = document.getElementById("import-tab-name");
+    const htmlEmbedUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlembed`;
     try {
-      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlembed`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const html = await response.text();
-      const regex = /items\.push\(\{name:\s*"([^"]+)"/g;
-      const tabs = [];
-      let match;
-      while ((match = regex.exec(html)) !== null) {
-        const name = match[1].replace(/\\\//g, "/");
-        if (!IGNORED_TABS.includes(name)) {
-          tabs.push(name);
-        }
+      let html;
+      try {
+        const resp = await fetch(htmlEmbedUrl);
+        if (!resp.ok) throw new Error("direct failed");
+        html = await resp.text();
+      } catch {
+        const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(htmlEmbedUrl)}`;
+        const resp = await fetch(proxyUrl);
+        if (!resp.ok) throw new Error("proxy failed");
+        html = await resp.text();
       }
-      select.innerHTML = "";
-      if (tabs.length === 0) {
-        select.innerHTML = '<option value="" disabled selected>No tabs found</option>';
-        return;
-      }
+      const tabs = parseTabNames(html);
+      if (tabs.length === 0) throw new Error("no tabs");
       select.innerHTML = '<option value="" disabled selected>Select a tab\u2026</option>';
       for (const tab of tabs) {
         const option = document.createElement("option");
@@ -298,7 +307,8 @@
         select.appendChild(option);
       }
     } catch {
-      select.innerHTML = '<option value="" disabled selected>Failed to load tabs</option>';
+      select.classList.add("hidden");
+      textInput.classList.remove("hidden");
     }
   }
   async function importPlayersFromSheet(tabName, onStateChange) {
@@ -328,9 +338,10 @@
     loadSheetTabs();
     document.getElementById("btn-import-players").addEventListener("click", () => {
       const select = document.getElementById("import-tab-select");
-      const tabName = select.value;
+      const textInput = document.getElementById("import-tab-name");
+      const tabName = select.classList.contains("hidden") ? textInput.value.trim() : select.value;
       if (!tabName) {
-        showToast("Please select a tab.");
+        showToast("Please select or enter a tab name.");
         return;
       }
       importPlayersFromSheet(tabName, onStateChange);

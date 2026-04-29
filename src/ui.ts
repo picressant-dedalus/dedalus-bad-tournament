@@ -141,31 +141,40 @@ const SPREADSHEET_ID = '1JaK-mi1zznMOo_-2Vdf-982QhP0lVBcpxWpCLl0KNjI';
 const HEADER_ROWS_TO_SKIP = 2;
 const IGNORED_TABS = ['Comptes', 'ARCHIVE', 'Contributions'];
 
+function parseTabNames(html: string): string[] {
+  const regex = /items\.push\(\{name:\s*"([^"]+)"/g;
+  const tabs: string[] = [];
+  let match;
+  while ((match = regex.exec(html)) !== null) {
+    const name = match[1].replace(/\\\//g, '/');
+    if (!IGNORED_TABS.includes(name)) {
+      tabs.push(name);
+    }
+  }
+  return tabs;
+}
+
 async function loadSheetTabs(): Promise<void> {
   const select = document.getElementById('import-tab-select') as HTMLSelectElement;
+  const textInput = document.getElementById('import-tab-name') as HTMLInputElement;
+  const htmlEmbedUrl = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlembed`;
+
   try {
-    const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/htmlembed`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const html = await response.text();
-
-    // Parse tab names from items.push({name: "..."}) in the HTML
-    const regex = /items\.push\(\{name:\s*"([^"]+)"/g;
-    const tabs: string[] = [];
-    let match;
-    while ((match = regex.exec(html)) !== null) {
-      // Unescape forward slashes from the HTML source
-      const name = match[1].replace(/\\\//g, '/');
-      if (!IGNORED_TABS.includes(name)) {
-        tabs.push(name);
-      }
+    // Try direct fetch first (works same-origin), then CORS proxy
+    let html: string;
+    try {
+      const resp = await fetch(htmlEmbedUrl);
+      if (!resp.ok) throw new Error('direct failed');
+      html = await resp.text();
+    } catch {
+      const proxyUrl = `https://api.codetabs.com/v1/proxy/?quest=${encodeURIComponent(htmlEmbedUrl)}`;
+      const resp = await fetch(proxyUrl);
+      if (!resp.ok) throw new Error('proxy failed');
+      html = await resp.text();
     }
 
-    select.innerHTML = '';
-    if (tabs.length === 0) {
-      select.innerHTML = '<option value="" disabled selected>No tabs found</option>';
-      return;
-    }
+    const tabs = parseTabNames(html);
+    if (tabs.length === 0) throw new Error('no tabs');
 
     select.innerHTML = '<option value="" disabled selected>Select a tab…</option>';
     for (const tab of tabs) {
@@ -175,7 +184,9 @@ async function loadSheetTabs(): Promise<void> {
       select.appendChild(option);
     }
   } catch {
-    select.innerHTML = '<option value="" disabled selected>Failed to load tabs</option>';
+    // Fallback: hide dropdown, show text input
+    select.classList.add('hidden');
+    textInput.classList.remove('hidden');
   }
 }
 
@@ -218,9 +229,13 @@ function setupPlayerEntry(onStateChange: () => void): void {
 
   document.getElementById('btn-import-players')!.addEventListener('click', () => {
     const select = document.getElementById('import-tab-select') as HTMLSelectElement;
-    const tabName = select.value;
+    const textInput = document.getElementById('import-tab-name') as HTMLInputElement;
+    // Use dropdown if visible, otherwise text input
+    const tabName = select.classList.contains('hidden')
+      ? textInput.value.trim()
+      : select.value;
     if (!tabName) {
-      showToast('Please select a tab.');
+      showToast('Please select or enter a tab name.');
       return;
     }
     importPlayersFromSheet(tabName, onStateChange);
