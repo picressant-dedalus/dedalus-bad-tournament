@@ -267,6 +267,12 @@
     }
   }
   function setupPlayerEntry(onStateChange) {
+    document.getElementById("btn-clear-players").addEventListener("click", () => {
+      if (!confirm("Clear all player names?")) return;
+      state.players = Array(12).fill("");
+      onStateChange();
+      renderPlayerInputs();
+    });
     document.getElementById("btn-generate-pairs").addEventListener("click", () => {
       const players = [];
       for (let i = 0; i < 12; i++) {
