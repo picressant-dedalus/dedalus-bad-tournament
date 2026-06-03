@@ -18,7 +18,7 @@ function main(): void {
 
   // Reset but keep player names — go straight to team generation
   (window as any).__resetKeepPlayers = () => {
-    const players = [...state.players];
+    const players = state.players.filter(p => p.trim() !== '');
     clearState();
     state = getDefaultState();
     state.players = players;

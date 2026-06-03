@@ -426,7 +426,8 @@
   }
   function setupTeamReview(onStateChange) {
     document.getElementById("btn-reshuffle").addEventListener("click", () => {
-      state.teams = generatePairs(state.players);
+      const activePlayers = state.players.filter((p) => p.trim() !== "");
+      state.teams = generatePairs(activePlayers);
       onStateChange();
       renderTeams();
     });
@@ -682,7 +683,7 @@
       initUI(state2, onStateChange);
     };
     window.__resetKeepPlayers = () => {
-      const players = [...state2.players];
+      const players = state2.players.filter((p) => p.trim() !== "");
       clearState();
       state2 = getDefaultState();
       state2.players = players;

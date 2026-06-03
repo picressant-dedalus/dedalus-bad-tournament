@@ -341,7 +341,8 @@ function renderTeams(): void {
 
 function setupTeamReview(onStateChange: () => void): void {
   document.getElementById('btn-reshuffle')!.addEventListener('click', () => {
-    state.teams = generatePairs(state.players);
+    const activePlayers = state.players.filter(p => p.trim() !== '');
+    state.teams = generatePairs(activePlayers);
     onStateChange();
     renderTeams();
   });
