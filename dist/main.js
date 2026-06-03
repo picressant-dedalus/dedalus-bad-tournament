@@ -44,7 +44,7 @@
   function generatePairs(players) {
     const shuffled = shuffle(players);
     const teams = [];
-    for (let i = 0; i < 12; i += 2) {
+    for (let i = 0; i < shuffled.length; i += 2) {
       teams.push({
         id: teams.length,
         player1: shuffled[i],

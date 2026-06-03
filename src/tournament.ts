@@ -30,7 +30,7 @@ export function shuffle<T>(arr: T[]): T[] {
 export function generatePairs(players: string[]): Team[] {
   const shuffled = shuffle(players);
   const teams: Team[] = [];
-  for (let i = 0; i < 12; i += 2) {
+  for (let i = 0; i < shuffled.length; i += 2) {
     teams.push({
       id: teams.length,
       player1: shuffled[i],
