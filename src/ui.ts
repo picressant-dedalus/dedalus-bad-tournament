@@ -249,25 +249,37 @@ function setupPlayerEntry(onStateChange: () => void): void {
   });
 
   document.getElementById('btn-generate-pairs')!.addEventListener('click', () => {
-    // Read player names
+    // Read filled player names
     const players: string[] = [];
     for (let i = 0; i < 12; i++) {
       const input = document.getElementById(`player-${i}`) as HTMLInputElement;
       const name = input.value.trim();
-      if (!name) {
-        input.focus();
-        input.classList.add('error');
-        setTimeout(() => input.classList.remove('error'), 1500);
-        return;
+      if (name) {
+        players.push(name);
       }
-      players.push(name);
+    }
+
+    // Validate player count: must be 4, 8, or 12
+    const validCounts = [4, 8, 12];
+    if (!validCounts.includes(players.length)) {
+      showToast(`Please fill exactly 4, 8, or 12 player names (currently ${players.length}).`);
+      return;
     }
 
     // Check for duplicates
     const uniqueNames = new Set(players.map(n => n.toLowerCase()));
-    if (uniqueNames.size < 12) {
+    if (uniqueNames.size < players.length) {
       showToast('All player names must be unique!');
       return;
+    }
+
+    // Confirm dialog for fewer than 12 players
+    const numTeams = players.length / 2;
+    const numRounds = numTeams - 1;
+    if (players.length < 12) {
+      if (!confirm(`You have ${players.length} players. This will create a tournament with ${numTeams} teams and ${numRounds} rounds. Continue?`)) {
+        return;
+      }
     }
 
     state.players = players;
@@ -335,7 +347,7 @@ function setupTeamReview(onStateChange: () => void): void {
   });
 
   document.getElementById('btn-confirm-teams')!.addEventListener('click', () => {
-    state.rounds = generateSchedule();
+    state.rounds = generateSchedule(state.teams.length);
     state.currentRound = 0;
     state.phase = 'rounds';
     onStateChange();

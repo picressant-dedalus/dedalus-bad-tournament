@@ -41,11 +41,11 @@ export function generatePairs(players: string[]): Team[] {
 }
 
 // Generate round-robin schedule using circle method
-// 6 teams → 5 rounds × 3 matches each
-export function generateSchedule(): Round[] {
-  const n = 6;
+// n teams → (n-1) rounds × (n/2) matches each
+export function generateSchedule(numTeams: number): Round[] {
+  const n = numTeams;
   const rounds: Round[] = [];
-  const teamIndices = [0, 1, 2, 3, 4, 5];
+  const teamIndices = Array.from({ length: n }, (_, i) => i);
 
   for (let r = 0; r < n - 1; r++) {
     const matches: Match[] = [];

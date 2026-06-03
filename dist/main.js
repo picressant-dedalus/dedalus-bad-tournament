@@ -53,10 +53,10 @@
     }
     return teams;
   }
-  function generateSchedule() {
-    const n = 6;
+  function generateSchedule(numTeams) {
+    const n = numTeams;
     const rounds = [];
-    const teamIndices = [0, 1, 2, 3, 4, 5];
+    const teamIndices = Array.from({ length: n }, (_, i) => i);
     for (let r = 0; r < n - 1; r++) {
       const matches = [];
       for (let i = 0; i < n / 2; i++) {
@@ -357,18 +357,26 @@
       for (let i = 0; i < 12; i++) {
         const input = document.getElementById(`player-${i}`);
         const name = input.value.trim();
-        if (!name) {
-          input.focus();
-          input.classList.add("error");
-          setTimeout(() => input.classList.remove("error"), 1500);
-          return;
+        if (name) {
+          players.push(name);
         }
-        players.push(name);
+      }
+      const validCounts = [4, 8, 12];
+      if (!validCounts.includes(players.length)) {
+        showToast(`Please fill exactly 4, 8, or 12 player names (currently ${players.length}).`);
+        return;
       }
       const uniqueNames = new Set(players.map((n) => n.toLowerCase()));
-      if (uniqueNames.size < 12) {
+      if (uniqueNames.size < players.length) {
         showToast("All player names must be unique!");
         return;
+      }
+      const numTeams = players.length / 2;
+      const numRounds = numTeams - 1;
+      if (players.length < 12) {
+        if (!confirm(`You have ${players.length} players. This will create a tournament with ${numTeams} teams and ${numRounds} rounds. Continue?`)) {
+          return;
+        }
       }
       state.players = players;
       state.teams = generatePairs(players);
@@ -423,7 +431,7 @@
       renderTeams();
     });
     document.getElementById("btn-confirm-teams").addEventListener("click", () => {
-      state.rounds = generateSchedule();
+      state.rounds = generateSchedule(state.teams.length);
       state.currentRound = 0;
       state.phase = "rounds";
       onStateChange();
