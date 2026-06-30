@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bad-tournament-v9';
+const CACHE_NAME = 'bad-tournament-v10';
 const ASSETS = [
   './',
   './index.html',

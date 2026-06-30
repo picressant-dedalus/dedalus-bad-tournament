@@ -54,20 +54,29 @@
     return teams;
   }
   function generateSchedule(numTeams) {
-    const n = numTeams;
+    const isOdd = numTeams % 2 === 1;
+    const BYE = numTeams;
+    const n = isOdd ? numTeams + 1 : numTeams;
     const rounds = [];
     const teamIndices = Array.from({ length: n }, (_, i) => i);
     for (let r = 0; r < n - 1; r++) {
       const matches = [];
+      let byeTeamIndex = null;
       for (let i = 0; i < n / 2; i++) {
+        const a = teamIndices[i];
+        const b = teamIndices[n - 1 - i];
+        if (isOdd && (a === BYE || b === BYE)) {
+          byeTeamIndex = a === BYE ? b : a;
+          continue;
+        }
         matches.push({
-          team1Index: teamIndices[i],
-          team2Index: teamIndices[n - 1 - i],
+          team1Index: a,
+          team2Index: b,
           score1: null,
           score2: null
         });
       }
-      rounds.push({ matches });
+      rounds.push({ matches, byeTeamIndex });
       const last = teamIndices.pop();
       teamIndices.splice(1, 0, last);
     }
@@ -361,9 +370,9 @@
           players.push(name);
         }
       }
-      const validCounts = [4, 8, 12];
+      const validCounts = [4, 6, 8, 10, 12];
       if (!validCounts.includes(players.length)) {
-        showToast(`Please fill exactly 4, 8, or 12 player names (currently ${players.length}).`);
+        showToast(`Please fill exactly 4, 6, 8, 10, or 12 player names (currently ${players.length}).`);
         return;
       }
       const uniqueNames = new Set(players.map((n) => n.toLowerCase()));
@@ -372,9 +381,10 @@
         return;
       }
       const numTeams = players.length / 2;
-      const numRounds = numTeams - 1;
+      const numRounds = numTeams % 2 === 1 ? numTeams : numTeams - 1;
       if (players.length < 12) {
-        if (!confirm(`You have ${players.length} players. This will create a tournament with ${numTeams} teams and ${numRounds} rounds. Continue?`)) {
+        const byeNote = numTeams % 2 === 1 ? " One pair will wait (bye) each round." : "";
+        if (!confirm(`You have ${players.length} players. This will create a tournament with ${numTeams} teams and ${numRounds} rounds.${byeNote} Continue?`)) {
           return;
         }
       }
@@ -518,6 +528,18 @@
     `;
       container.appendChild(card);
     });
+    const byeTeamIndex = round.byeTeamIndex ?? null;
+    if (byeTeamIndex !== null && state.teams[byeTeamIndex]) {
+      const byeTeam = state.teams[byeTeamIndex];
+      const byeCard = document.createElement("div");
+      byeCard.className = "bye-card";
+      byeCard.innerHTML = `
+      <div class="bye-badge">\u23F3 Waiting this round</div>
+      <div class="bye-team">${byeTeam.player1} & ${byeTeam.player2}</div>
+      <div class="bye-note">This pair has a bye and plays again next round.</div>
+    `;
+      container.appendChild(byeCard);
+    }
     if (!isRoundComplete || editingScores) {
       attachScoreValidation(container);
     }

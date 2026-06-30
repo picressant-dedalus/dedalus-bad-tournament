@@ -14,6 +14,8 @@ export interface Match {
 
 export interface Round {
   matches: Match[];
+  // Index of the team that sits out (bye) this round, or null when every team plays.
+  byeTeamIndex: number | null;
 }
 
 // Shuffle array in-place (Fisher-Yates)
@@ -40,25 +42,41 @@ export function generatePairs(players: string[]): Team[] {
   return teams;
 }
 
-// Generate round-robin schedule using circle method
-// n teams → (n-1) rounds × (n/2) matches each
+// Generate round-robin schedule using circle method.
+// Even team counts → (n-1) rounds × (n/2) matches each, no byes.
+// Odd team counts → a virtual "bye" slot is added so the circle method runs on
+// an even number of slots; each round the team paired with the bye sits out.
+// This yields n rounds, each with (n-1)/2 matches plus one waiting team.
 export function generateSchedule(numTeams: number): Round[] {
-  const n = numTeams;
+  const isOdd = numTeams % 2 === 1;
+  const BYE = numTeams; // virtual team index representing "sit out" (odd counts only)
+  const n = isOdd ? numTeams + 1 : numTeams; // number of slots in the rotation
   const rounds: Round[] = [];
   const teamIndices = Array.from({ length: n }, (_, i) => i);
 
   for (let r = 0; r < n - 1; r++) {
     const matches: Match[] = [];
+    let byeTeamIndex: number | null = null;
+
     // Pair first with last, second with second-to-last, etc.
     for (let i = 0; i < n / 2; i++) {
+      const a = teamIndices[i];
+      const b = teamIndices[n - 1 - i];
+
+      // If either side is the virtual bye, the real team waits this round.
+      if (isOdd && (a === BYE || b === BYE)) {
+        byeTeamIndex = a === BYE ? b : a;
+        continue;
+      }
+
       matches.push({
-        team1Index: teamIndices[i],
-        team2Index: teamIndices[n - 1 - i],
+        team1Index: a,
+        team2Index: b,
         score1: null,
         score2: null,
       });
     }
-    rounds.push({ matches });
+    rounds.push({ matches, byeTeamIndex });
 
     // Rotate: fix position 0, rotate the rest
     const last = teamIndices.pop()!;

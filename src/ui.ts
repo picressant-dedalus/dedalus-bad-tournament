@@ -259,10 +259,10 @@ function setupPlayerEntry(onStateChange: () => void): void {
       }
     }
 
-    // Validate player count: must be 4, 8, or 12
-    const validCounts = [4, 8, 12];
+    // Validate player count: must be 4, 6, 8, 10, or 12
+    const validCounts = [4, 6, 8, 10, 12];
     if (!validCounts.includes(players.length)) {
-      showToast(`Please fill exactly 4, 8, or 12 player names (currently ${players.length}).`);
+      showToast(`Please fill exactly 4, 6, 8, 10, or 12 player names (currently ${players.length}).`);
       return;
     }
 
@@ -275,9 +275,13 @@ function setupPlayerEntry(onStateChange: () => void): void {
 
     // Confirm dialog for fewer than 12 players
     const numTeams = players.length / 2;
-    const numRounds = numTeams - 1;
+    // Odd team counts use a bye each round → one round per team; even → n-1 rounds.
+    const numRounds = numTeams % 2 === 1 ? numTeams : numTeams - 1;
     if (players.length < 12) {
-      if (!confirm(`You have ${players.length} players. This will create a tournament with ${numTeams} teams and ${numRounds} rounds. Continue?`)) {
+      const byeNote = numTeams % 2 === 1
+        ? ' One pair will wait (bye) each round.'
+        : '';
+      if (!confirm(`You have ${players.length} players. This will create a tournament with ${numTeams} teams and ${numRounds} rounds.${byeNote} Continue?`)) {
         return;
       }
     }
@@ -454,6 +458,20 @@ function renderRound(): void {
     `;
     container.appendChild(card);
   });
+
+  // Highlight the pair that sits out (bye) this round, if any.
+  const byeTeamIndex = round.byeTeamIndex ?? null;
+  if (byeTeamIndex !== null && state.teams[byeTeamIndex]) {
+    const byeTeam = state.teams[byeTeamIndex];
+    const byeCard = document.createElement('div');
+    byeCard.className = 'bye-card';
+    byeCard.innerHTML = `
+      <div class="bye-badge">⏳ Waiting this round</div>
+      <div class="bye-team">${byeTeam.player1} & ${byeTeam.player2}</div>
+      <div class="bye-note">This pair has a bye and plays again next round.</div>
+    `;
+    container.appendChild(byeCard);
+  }
 
   // Attach live validation to score inputs when editing or entering new scores
   if (!isRoundComplete || editingScores) {

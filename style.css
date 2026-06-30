@@ -331,6 +331,35 @@ h2 {
   margin-bottom: 0.5rem;
 }
 
+.bye-card {
+  background: #fffbeb;
+  border: 2px dashed #f59e0b;
+  border-radius: 10px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.bye-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #b45309;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.4rem;
+}
+
+.bye-team {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #92400e;
+}
+
+.bye-note {
+  font-size: 0.8rem;
+  color: #b45309;
+  margin-top: 0.3rem;
+}
+
 .match-body {
   display: flex;
   flex-direction: column;
